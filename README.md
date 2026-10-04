@@ -1,6 +1,6 @@
-# ascii
+# pixel-to-character
 
-Turn images into shaded ASCII art in the browser.
+Redraw images in characters — blocks, braille, ASCII, or your own set — right in the browser.
 
 Each character is picked by brightness first, so the result keeps the image's shading and depth. A shape pass then swaps in characters whose ink matches nearby edges (`/ \ | _ ( )`), which sharpens outlines without losing tone.
 

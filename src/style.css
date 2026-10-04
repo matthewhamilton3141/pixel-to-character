@@ -44,8 +44,8 @@ body {
   scrollbar-width: thin;
 }
 
-header { display: flex; justify-content: space-between; align-items: center; }
-.mark { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+header { display: flex; gap: 12px; align-items: center; }
+header #open { flex: 1; padding: 10px; font-size: 13px; }
 
 .theme {
   width: 22px;
@@ -54,13 +54,12 @@ header { display: flex; justify-content: space-between; align-items: center; }
   border: 1px solid var(--ink);
   border-radius: 50%;
   background: linear-gradient(90deg, var(--ink) 50%, transparent 50%);
+  flex: none;
   cursor: pointer;
+  transition: transform 0.4s;
 }
 .theme:hover { transform: rotate(180deg); }
-.theme { transition: transform 0.4s; }
 
-.open { margin: 20px 0 8px; }
-.open button { width: 100%; padding: 10px; font-size: 13px; }
 
 h2 { margin: 0 0 14px; font-size: 13px; font-weight: 600; }
 

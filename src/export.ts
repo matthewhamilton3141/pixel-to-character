@@ -41,7 +41,7 @@ export function toHtml(res: ConvertResult, o: RenderOptions) {
     body += "\n";
   }
   return `<!doctype html>
-<html><head><meta charset="utf-8"><title>ASCII</title></head>
+<html><head><meta charset="utf-8"><title>pixel-to-character</title></head>
 <body style="margin:0;padding:24px;background:${hex(...o.bg)}">
 <pre style="margin:0;font-family:${o.font};font-size:10px;line-height:1;color:${hex(...o.fg)}">${body}</pre>
 </body></html>`;
