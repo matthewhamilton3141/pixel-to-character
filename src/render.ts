@@ -1,5 +1,6 @@
 import { toAnsi256 } from "./color";
 import { MAX_STROKE_EM } from "./glyphs";
+import { drawShape } from "./shapes";
 import type { ColorMode, ConvertResult } from "./types";
 
 export interface RenderOptions {
@@ -49,7 +50,9 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
   canvas.height = Math.round(outH * dpr);
 
   const ctx = canvas.getContext("2d")!;
-  ctx.setTransform((dpr * outW) / cssW, 0, 0, (dpr * outH) / cssH, 0, 0);
+  const kx = (dpr * outW) / cssW;
+  const ky = (dpr * outH) / cssH;
+  ctx.setTransform(kx, 0, 0, ky, 0, 0);
   ctx.fillStyle = `rgb(${o.bg})`;
   ctx.fillRect(0, 0, cssW, cssH);
 
@@ -80,6 +83,7 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
         ctx.fillStyle = ctx.strokeStyle = `rgb(${rgb[c * 3]},${rgb[c * 3 + 1]},${rgb[c * 3 + 2]})`;
         last = key;
       }
+      if (drawShape(ctx, char, x * cw, y * ch, cw, ch, o.weight, kx, ky)) continue;
       ctx.fillText(char, x * cw, y * ch + ch / 2);
       if (stroke) ctx.strokeText(char, x * cw, y * ch + ch / 2);
     }
