@@ -1,4 +1,5 @@
 import { CELL_BG_DIM, cellColors, type RenderOptions } from "./render";
+import { textFor } from "./dots";
 import { MAX_STROKE_EM } from "./glyphs";
 import type { ConvertResult } from "./types";
 
@@ -6,7 +7,7 @@ export function toText(res: ConvertResult, chars: string[]) {
   const lines: string[] = [];
   for (let y = 0; y < res.rows; y++) {
     let line = "";
-    for (let x = 0; x < res.cols; x++) line += chars[res.glyphs[y * res.cols + x]];
+    for (let x = 0; x < res.cols; x++) line += textFor(chars[res.glyphs[y * res.cols + x]]);
     lines.push(line);
   }
   return lines.join("\n");
@@ -36,7 +37,7 @@ export function toHtml(res: ConvertResult, o: RenderOptions) {
         flush();
         runStyle = style;
       }
-      run += o.chars[res.glyphs[c]];
+      run += textFor(o.chars[res.glyphs[c]]);
     }
     flush();
     body += "\n";
@@ -68,7 +69,7 @@ export function toAnsi(res: ConvertResult, o: RenderOptions) {
         out += seq;
         last = seq;
       }
-      out += o.chars[res.glyphs[c]];
+      out += textFor(o.chars[res.glyphs[c]]);
     }
     out += o.colorMode === "mono" ? "\n" : "\x1b[0m\n";
   }

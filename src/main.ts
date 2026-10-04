@@ -2,7 +2,8 @@ import { CHARSETS } from "./charsets";
 import { hexToRgb, luminance } from "./color";
 import { demoImage } from "./demo";
 import { download, toAnsi, toHtml, toText } from "./export";
-import { buildGlyphTable, type GlyphTable } from "./glyphs";
+import { dotCharset } from "./dots";
+import { buildGlyphTable, fontAspect, type GlyphTable } from "./glyphs";
 import { render, type RenderOptions } from "./render";
 import type { ColorMode, ConvertRequest, ConvertResult, Dither } from "./types";
 import ConvertWorker from "./convert.worker?worker";
@@ -89,8 +90,9 @@ systemDark.addEventListener("change", () => {
   update();
 });
 
-function charset() {
+async function charset(font: string) {
   const v = $<HTMLSelectElement>("charset").value;
+  if (v === "dots") return dotCharset(+$("grid").value, await fontAspect(font));
   return v === "custom" ? $("custom").value || " " : CHARSETS[v];
 }
 
@@ -104,9 +106,10 @@ async function update() {
 
   const font = $<HTMLSelectElement>("font").value;
   const weight = +$("weight").value;
-  const key = font + "\0" + weight + "\0" + charset();
+  const chars = await charset(font);
+  const key = font + "\0" + weight + "\0" + chars;
   if (key !== glyphKey) {
-    glyphs = await buildGlyphTable(charset(), font, weight);
+    glyphs = await buildGlyphTable(chars, font, weight);
     glyphKey = key;
   }
   const g = glyphs!;
@@ -190,6 +193,13 @@ function draw() {
   stats.textContent = `${cols}×${rows} · convert ${lastResult.ms.toFixed(0)} ms · draw ${(performance.now() - t0).toFixed(0)} ms`;
 }
 
+// Custom text and the dot Grid slider only show for their character sets
+function syncCharsetUI() {
+  const v = $<HTMLSelectElement>("charset").value;
+  $("custom").hidden = v !== "custom";
+  $<HTMLElement>("gridRow").hidden = v !== "dots";
+}
+
 // Controls
 const controls = [...document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(".panel input, .panel select")].filter(
   (el) => el.id !== "file" && !el.classList.contains("num"),
@@ -201,12 +211,13 @@ for (const el of controls) {
       syncRange($("fontSize"));
       stage.classList.toggle("fit", $("fit").checked);
     }
-    if (el.id === "charset") $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
+    if (el.id === "charset") syncCharsetUI();
     if (el.id === "fontSize") draw();
     else update();
   });
 }
 stage.classList.toggle("fit", $("fit").checked);
+syncCharsetUI();
 
 // Restore defaults: every control back to its HTML default; the image and theme stay
 $("reset").addEventListener("click", () => {
@@ -218,7 +229,7 @@ $("reset").addEventListener("click", () => {
     else el.value = el.defaultValue;
   }
   applyTheme(); // ink and paper follow the current theme
-  $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
+  syncCharsetUI();
   $("fontSize").disabled = $("fit").checked;
   stage.classList.toggle("fit", $("fit").checked);
   ranges.forEach(syncRange);

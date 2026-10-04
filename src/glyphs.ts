@@ -17,6 +17,15 @@ const SIZE = 48;
 /** Stroke width, as a fraction of font size, at Weight = 1. */
 export const MAX_STROKE_EM = 0.12;
 
+/** Cell width / height for a monospace font (line height = font size). */
+export async function fontAspect(font: string): Promise<number> {
+  const fontSpec = `${SIZE}px ${font}`;
+  await document.fonts.load(fontSpec).catch(() => {});
+  const ctx = document.createElement("canvas").getContext("2d")!;
+  ctx.font = fontSpec;
+  return Math.ceil(ctx.measureText("M").width) / SIZE;
+}
+
 export async function buildGlyphTable(charset: string, font: string, weight = 0): Promise<GlyphTable> {
   const fontSpec = `${SIZE}px ${font}`;
   await document.fonts.load(fontSpec, charset).catch(() => {});

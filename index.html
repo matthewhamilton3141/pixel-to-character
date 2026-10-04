@@ -24,6 +24,7 @@
         <div class="range"><label for="cols">Columns</label><input class="num" id="cols-num" type="number" aria-label="Columns" /><input id="cols" type="range" min="20" max="400" value="140" /></div>
         <label class="field">Characters
           <span class="sel"><select id="charset">
+            <option value="dots">Dots ⁘</option>
             <option value="braille">Braille ⣿</option>
             <option value="custom">Custom…</option>
             <option disabled>──────</option>
@@ -32,6 +33,7 @@
             <option value="minimal">Minimal</option>
           </select></span>
         </label>
+        <div class="range" id="gridRow" hidden><label for="grid">Grid</label><input class="num" id="grid-num" type="number" aria-label="Grid" /><input id="grid" type="range" min="2" max="8" step="1" value="4" /></div>
         <input id="custom" type="text" value=" .,:;irsXA253hMHGS#9B&@" spellcheck="false" hidden />
         <label class="field">Font
           <span class="sel"><select id="font">

@@ -2,6 +2,8 @@
 // leave gaps between rows for these; drawing them edge-to-edge on the cell,
 // snapped to device pixels, makes neighbouring cells join seamlessly.
 
+import { drawDots } from "./dots";
+
 // Quadrant bits: 1 = top-left, 2 = top-right, 4 = bottom-left, 8 = bottom-right
 const QUADRANTS: Record<string, number> = {
   "▘": 1, "▝": 2, "▀": 3, "▖": 4, "▌": 5, "▞": 6, "▛": 7,
@@ -36,6 +38,7 @@ export function drawShape(
   x: number, y: number, w: number, h: number,
   weight: number, kx = 1, ky = 1,
 ): boolean {
+  if (drawDots(ctx, ch, x, y, w, h, weight)) return true;
   const sx = (v: number) => Math.round(v * kx) / kx;
   const sy = (v: number) => Math.round(v * ky) / ky;
   const rect = (x0: number, y0: number, x1: number, y1: number) =>
