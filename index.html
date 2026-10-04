@@ -21,7 +21,7 @@
 
       <section>
         <h2>Grid</h2>
-        <label class="range">Columns <output for="cols"></output><input id="cols" type="range" min="20" max="400" value="140" /></label>
+        <div class="range"><label for="cols">Columns</label><input class="num" id="cols-num" type="number" aria-label="Columns" /><input id="cols" type="range" min="20" max="400" value="140" /></div>
         <label class="field">Characters
           <span class="sel"><select id="charset">
             <option value="braille">Braille ⣿</option>
@@ -42,16 +42,16 @@
             <option value="'Courier New', monospace">Courier New</option>
           </select></span>
         </label>
-        <label class="range">Weight <output for="weight"></output><input id="weight" type="range" min="0" max="1" step="0.01" value="0" /></label>
-        <label class="range">Shape <output for="shape"></output><input id="shape" type="range" min="0" max="1" step="0.01" value="0.6" /></label>
+        <div class="range"><label for="weight">Weight</label><input class="num" id="weight-num" type="number" aria-label="Weight" /><input id="weight" type="range" min="0" max="1" step="0.01" value="0" /></div>
+        <div class="range"><label for="shape">Shape</label><input class="num" id="shape-num" type="number" aria-label="Shape" /><input id="shape" type="range" min="0" max="1" step="0.01" value="0.6" /></div>
         <p class="hint">Shading ← → edges</p>
       </section>
 
       <section>
         <h2>Tone</h2>
-        <label class="range">Brightness <output for="brightness"></output><input id="brightness" type="range" min="-0.5" max="0.5" step="0.01" value="0" /></label>
-        <label class="range">Contrast <output for="contrast"></output><input id="contrast" type="range" min="0.2" max="3" step="0.01" value="1.2" /></label>
-        <label class="range">Gamma <output for="gamma"></output><input id="gamma" type="range" min="0.3" max="3" step="0.01" value="1" /></label>
+        <div class="range"><label for="brightness">Brightness</label><input class="num" id="brightness-num" type="number" aria-label="Brightness" /><input id="brightness" type="range" min="-0.5" max="0.5" step="0.01" value="0" /></div>
+        <div class="range"><label for="contrast">Contrast</label><input class="num" id="contrast-num" type="number" aria-label="Contrast" /><input id="contrast" type="range" min="0.2" max="3" step="0.01" value="1.2" /></div>
+        <div class="range"><label for="gamma">Gamma</label><input class="num" id="gamma-num" type="number" aria-label="Gamma" /><input id="gamma" type="range" min="0.3" max="3" step="0.01" value="1" /></div>
         <label class="field">Dither
           <span class="sel"><select id="dither">
             <option value="none">None</option>
@@ -84,7 +84,7 @@
       <section>
         <h2>View</h2>
         <label class="check"><input id="fit" type="checkbox" checked /> Fit to window</label>
-        <label class="range">Size <output for="fontSize"></output><input id="fontSize" type="range" min="3" max="24" step="0.5" value="10" disabled /></label>
+        <div class="range"><label for="fontSize">Size</label><input class="num" id="fontSize-num" type="number" aria-label="Size" /><input id="fontSize" type="range" min="3" max="24" step="0.5" value="10" disabled /></div>
       </section>
 
       <section>
@@ -97,6 +97,8 @@
           <button data-export="copy">Copy</button>
         </div>
       </section>
+
+      <button id="reset" class="reset">Restore defaults</button>
     </aside>
 
     <main id="stage">

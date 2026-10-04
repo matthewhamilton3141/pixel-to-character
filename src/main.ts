@@ -26,20 +26,32 @@ let pending = false;
 const sample = document.createElement("canvas");
 const sampleCtx = sample.getContext("2d", { willReadFrequently: true })!;
 
-// Show slider values next to their labels, and fill the track up to the thumb
-for (const out of document.querySelectorAll("output")) {
-  const input = $(out.htmlFor.value);
-  const show = () => (out.textContent = input.value);
-  input.addEventListener("input", show);
-  show();
+// Sliders: fill the track up to the thumb, and mirror the value in a typable
+// number box that clamps to the slider's range and snaps to its step
+const ranges = [...document.querySelectorAll<HTMLInputElement>("input[type=range]")];
+function syncRange(input: HTMLInputElement) {
+  const p = ((+input.value - +input.min) / (+input.max - +input.min)) * 100;
+  input.style.setProperty("--p", `${p}%`);
+  const num = $(`${input.id}-num`);
+  num.value = input.value;
+  num.disabled = input.disabled;
 }
-for (const input of document.querySelectorAll<HTMLInputElement>("input[type=range]")) {
-  const fill = () => {
-    const p = ((+input.value - +input.min) / (+input.max - +input.min)) * 100;
-    input.style.setProperty("--p", `${p}%`);
-  };
-  input.addEventListener("input", fill);
-  fill();
+for (const input of ranges) {
+  const num = $(`${input.id}-num`);
+  num.min = input.min;
+  num.max = input.max;
+  num.step = input.step || "1";
+  input.addEventListener("input", () => syncRange(input));
+  num.addEventListener("change", () => {
+    const step = +num.step;
+    let v = Math.min(+input.max, Math.max(+input.min, +num.value || 0));
+    v = +(Math.round((v - +input.min) / step) * step + +input.min).toFixed(4);
+    input.value = String(v);
+    input.dispatchEvent(new Event("input"));
+    syncRange(input);
+  });
+  num.addEventListener("keydown", (e) => e.key === "Enter" && num.blur());
+  syncRange(input);
 }
 
 // Light / dark: follows the system until toggled; ink and paper follow the theme
@@ -176,11 +188,14 @@ function draw() {
 }
 
 // Controls
-for (const el of document.querySelectorAll<HTMLElement>(".panel input, .panel select")) {
-  if (el.id === "file") continue;
+const controls = [...document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(".panel input, .panel select")].filter(
+  (el) => el.id !== "file" && !el.classList.contains("num"),
+);
+for (const el of controls) {
   el.addEventListener("input", () => {
     if (el.id === "fit") {
       $("fontSize").disabled = $("fit").checked;
+      syncRange($("fontSize"));
       stage.classList.toggle("fit", $("fit").checked);
     }
     if (el.id === "charset") $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
@@ -189,6 +204,23 @@ for (const el of document.querySelectorAll<HTMLElement>(".panel input, .panel se
   });
 }
 stage.classList.toggle("fit", $("fit").checked);
+
+// Restore defaults: every control back to its HTML default; the image and theme stay
+$("reset").addEventListener("click", () => {
+  for (const el of controls) {
+    if (el instanceof HTMLSelectElement) {
+      const def = [...el.options].find((o) => o.defaultSelected) ?? [...el.options].find((o) => !o.disabled);
+      if (def) el.value = def.value;
+    } else if (el.type === "checkbox") el.checked = el.defaultChecked;
+    else el.value = el.defaultValue;
+  }
+  applyTheme(); // ink and paper follow the current theme
+  $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
+  $("fontSize").disabled = $("fit").checked;
+  stage.classList.toggle("fit", $("fit").checked);
+  ranges.forEach(syncRange);
+  update();
+});
 new ResizeObserver(() => $("fit").checked && draw()).observe(stage);
 
 // Loading images
