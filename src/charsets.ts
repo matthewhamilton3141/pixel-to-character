@@ -6,6 +6,6 @@ export const CHARSETS: Record<string, string> = {
   standard: " .:-=+*#%@",
   minimal: " .oO@",
   // shades for tone, half/quarter blocks so shape matching can follow edges
-  blocks: " ░▒▓▀▄▌▐▖▗▘▝▚▞▙▛▜▟",
+  blocks: " ░▒▓█▀▄▌▐▖▗▘▝▚▞▙▛▜▟",
   braille,
 };
