@@ -21,6 +21,13 @@ let lastResult: ConvertResult | null = null;
 let lastOptions: RenderOptions | null = null;
 let lastSourceAspect = 1;
 let rotation = 0; // quarter turns clockwise, applied when sampling the image
+
+// Crop: a normalized rect in the rotated image. While editing (editCrop set),
+// the preview shows the whole image and you drag a box over it.
+type Rect = { x: number; y: number; w: number; h: number };
+const FULL: Rect = { x: 0, y: 0, w: 1, h: 1 };
+let crop: Rect = { ...FULL };
+let editCrop: Rect | null = null;
 let requestId = 0;
 let busy = false;
 let pending = false;
@@ -117,17 +124,22 @@ async function update() {
 
   const cols = +$("cols").value;
   const sideways = rotation % 2 === 1;
-  const srcW = sideways ? source.height : source.width;
-  const srcH = sideways ? source.width : source.height;
+  const fullW = sideways ? source.height : source.width;
+  const fullH = sideways ? source.width : source.height;
+  const area = editCrop ? FULL : crop;
+  const srcW = fullW * area.w;
+  const srcH = fullH * area.h;
   const rows = Math.max(1, Math.round((cols * srcH * g.aspect) / srcW));
   sample.width = cols * 3;
   sample.height = rows * 3;
   sampleCtx.imageSmoothingQuality = "high";
+  // Map the crop area of the rotated image onto the sample canvas
   sampleCtx.save();
-  sampleCtx.translate(sample.width / 2, sample.height / 2);
+  sampleCtx.scale(sample.width / srcW, sample.height / srcH);
+  sampleCtx.translate(-area.x * fullW, -area.y * fullH);
+  sampleCtx.translate(fullW / 2, fullH / 2);
   sampleCtx.rotate((rotation * Math.PI) / 2);
-  const [dw, dh] = sideways ? [sample.height, sample.width] : [sample.width, sample.height];
-  sampleCtx.drawImage(source, -dw / 2, -dh / 2, dw, dh);
+  sampleCtx.drawImage(source, -source.width / 2, -source.height / 2);
   sampleCtx.restore();
   const pixels = sampleCtx.getImageData(0, 0, sample.width, sample.height).data;
 
@@ -201,6 +213,7 @@ function draw() {
   }
   const t0 = performance.now();
   render(canvas, lastResult, lastOptions, display);
+  placeCropBox();
   stats.textContent = `${cols}×${rows} · convert ${lastResult.ms.toFixed(0)} ms · draw ${(performance.now() - t0).toFixed(0)} ms`;
 }
 
@@ -253,16 +266,101 @@ async function loadFile(file: File | null | undefined) {
   if (!file || !file.type.startsWith("image/")) return;
   source = await createImageBitmap(file);
   rotation = 0;
+  crop = { ...FULL };
+  if (editCrop) editCrop = { ...FULL };
   update();
 }
 $("open").addEventListener("click", () => $("file").click());
-$("rotL").addEventListener("click", () => {
-  rotation = (rotation + 3) % 4;
+// A quarter turn of the image carries the crop rect with it
+const turn = (r: Rect, cw: boolean): Rect =>
+  cw ? { x: 1 - r.y - r.h, y: r.x, w: r.h, h: r.w } : { x: r.y, y: 1 - r.x - r.w, w: r.h, h: r.w };
+function rotate(cw: boolean) {
+  rotation = (rotation + (cw ? 1 : 3)) % 4;
+  crop = turn(crop, cw);
+  if (editCrop) editCrop = turn(editCrop, cw);
   update();
+}
+$("rotL").addEventListener("click", () => rotate(false));
+$("rotR").addEventListener("click", () => rotate(true));
+
+// Cropping
+const cropBox = $<HTMLElement>("cropBox");
+function placeCropBox() {
+  if (!editCrop) return;
+  cropBox.style.left = `${canvas.offsetLeft + editCrop.x * canvas.offsetWidth}px`;
+  cropBox.style.top = `${canvas.offsetTop + editCrop.y * canvas.offsetHeight}px`;
+  cropBox.style.width = `${editCrop.w * canvas.offsetWidth}px`;
+  cropBox.style.height = `${editCrop.h * canvas.offsetHeight}px`;
+}
+function setCropping(on: boolean) {
+  stage.classList.toggle("cropping", on);
+  $("crop").classList.toggle("on", on);
+  update();
+}
+function startCrop() {
+  editCrop = { ...crop };
+  setCropping(true);
+}
+function endCrop(apply: boolean) {
+  if (!editCrop) return;
+  if (apply) crop = editCrop;
+  editCrop = null;
+  setCropping(false);
+}
+$("crop").addEventListener("click", () => (editCrop ? endCrop(true) : startCrop()));
+$("cropApply").addEventListener("click", () => endCrop(true));
+$("cropCancel").addEventListener("click", () => endCrop(false));
+$("cropReset").addEventListener("click", () => {
+  editCrop = { ...FULL };
+  placeCropBox();
 });
-$("rotR").addEventListener("click", () => {
-  rotation = (rotation + 1) % 4;
-  update();
+window.addEventListener("keydown", (e) => {
+  if (!editCrop || (e.target as HTMLElement).tagName === "INPUT") return;
+  if (e.key === "Enter") endCrop(true);
+  if (e.key === "Escape") endCrop(false);
+});
+
+// Drag on the preview: inside the box moves it, outside draws a new one
+let drag: { mode: "draw" | "move"; ax: number; ay: number; start: Rect } | null = null;
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+function pointAt(e: PointerEvent) {
+  const r = canvas.getBoundingClientRect();
+  return { x: clamp01((e.clientX - r.left) / r.width), y: clamp01((e.clientY - r.top) / r.height) };
+}
+stage.addEventListener("pointerdown", (e) => {
+  if (!editCrop || (e.target as HTMLElement).closest("#cropBar")) return;
+  const p = pointAt(e);
+  const c = editCrop;
+  const inside = p.x > c.x && p.x < c.x + c.w && p.y > c.y && p.y < c.y + c.h;
+  const isFull = c.w === 1 && c.h === 1;
+  drag = { mode: inside && !isFull ? "move" : "draw", ax: p.x, ay: p.y, start: { ...c } };
+  stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener("pointermove", (e) => {
+  if (!drag || !editCrop) return;
+  const p = pointAt(e);
+  if (drag.mode === "move") {
+    const s = drag.start;
+    editCrop = {
+      ...s,
+      x: Math.min(1 - s.w, Math.max(0, s.x + p.x - drag.ax)),
+      y: Math.min(1 - s.h, Math.max(0, s.y + p.y - drag.ay)),
+    };
+  } else {
+    editCrop = {
+      x: Math.min(drag.ax, p.x),
+      y: Math.min(drag.ay, p.y),
+      w: Math.abs(p.x - drag.ax),
+      h: Math.abs(p.y - drag.ay),
+    };
+  }
+  placeCropBox();
+});
+stage.addEventListener("pointerup", () => {
+  // A click or tiny drag isn't a crop; keep what was there
+  if (drag && editCrop && (editCrop.w < 0.02 || editCrop.h < 0.02)) editCrop = drag.start;
+  drag = null;
+  placeCropBox();
 });
 $("file").addEventListener("change", () => loadFile($("file").files?.[0]));
 window.addEventListener("paste", (e) => loadFile(e.clipboardData?.files[0]));

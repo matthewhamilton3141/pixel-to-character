@@ -217,6 +217,33 @@ main {
 main.fit { overflow: hidden; }
 /* margin:auto centers, but unlike place-items it never crops an oversized canvas */
 canvas { display: block; flex: none; margin: auto; }
+
+/* cropping: dim everything outside the box; the stage handles the dragging */
+main.cropping { cursor: crosshair; touch-action: none; }
+#cropBox {
+  position: absolute;
+  display: none;
+  border: 1px solid var(--ink);
+  box-shadow: inset 0 0 0 1px var(--paper), 0 0 0 100vmax color-mix(in srgb, var(--paper) 70%, transparent);
+  pointer-events: none;
+}
+main.cropping #cropBox { display: block; }
+#cropBar {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: none;
+  gap: 6px;
+  padding: 6px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+main.cropping #cropBar { display: flex; }
+#cropBar button { background: var(--paper); }
+#cropBar button:hover { background: var(--ink); }
+button.icon svg { display: block; margin: auto; }
+button.icon.on { background: var(--ink); color: var(--paper); }
 #stats {
   position: fixed;
   right: 16px;

@@ -21,6 +21,7 @@
         <p class="hint">or drop or paste one</p>
         <button id="rotL" class="icon" aria-label="Rotate left" title="Rotate left">↺</button>
         <button id="rotR" class="icon" aria-label="Rotate right" title="Rotate right">↻</button>
+        <button id="crop" class="icon" aria-label="Crop" title="Crop"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1v11h11M1 4h11v11" /></svg></button>
       </div>
 
       <section>
@@ -111,6 +112,12 @@
 
     <main id="stage">
       <canvas id="out"></canvas>
+      <div id="cropBox"></div>
+      <div id="cropBar">
+        <button id="cropApply">Apply</button>
+        <button id="cropReset">Reset</button>
+        <button id="cropCancel">Cancel</button>
+      </div>
       <div id="stats"></div>
       <div id="drop">Drop image</div>
     </main>
