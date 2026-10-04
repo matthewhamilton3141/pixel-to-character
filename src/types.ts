@@ -14,6 +14,9 @@ export interface ToneParams {
   paper: [number, number, number]; // 0..1
   shape: number; // 0 = pure tone ramp, 1 = full shape matching
   dither: Dither;
+  // Characters are cut out of a filled cell instead of drawn on paper, so a
+  // bigger glyph means a lighter cell and edge matching flips
+  knockout: boolean;
 }
 
 export interface ConvertRequest {
@@ -33,5 +36,6 @@ export interface ConvertResult {
   rows: number;
   glyphs: Uint16Array; // index into GlyphTable.chars
   colors: Uint8Array; // rgb per cell
+  filled: Uint8Array; // knockout: 1 where the cell is filled (and glyph cut out)
   ms: number;
 }

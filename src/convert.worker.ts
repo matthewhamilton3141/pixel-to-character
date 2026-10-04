@@ -5,7 +5,7 @@ const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) =>
 self.onmessage = (e: MessageEvent<ConvertRequest>) => {
   const t0 = performance.now();
   const { id, pixels, cols, rows, params, density, vec, coverage } = e.data;
-  const { brightness, contrast, gamma, inkIsDark, shape, dither, autoLevels, paperInk, paper } = params;
+  const { brightness, contrast, gamma, inkIsDark, shape, dither, autoLevels, paperInk, paper, knockout } = params;
   const n = density.length;
   const cells = cols * rows;
   const W = cols * 3;
@@ -91,6 +91,12 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
 
   // Pass 2: pick the glyph minimizing tone error + weighted shape error
   const glyphs = new Uint16Array(cells);
+  const filled = new Uint8Array(cells);
+  // Knockout: ink is the cell minus the glyph, so flip tone and shape, and
+  // leave near-paper cells empty rather than solid blocks full of holes
+  const sign = knockout ? -1 : 1;
+  let blank = 0;
+  for (let i = 1; i < n; i++) if (density[i] < density[blank]) blank = i;
   // Shape is scored by direction (cosine) and only counts as much as the cell
   // actually has an edge, so smooth regions stay a pure tone ramp.
   const SHAPE_K = 0.04;
@@ -111,6 +117,14 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
     for (let cx = 0; cx < cols; cx++) {
       const c = cy * cols + cx;
       let t = tone[c];
+      if (knockout) {
+        if (t < 0.04) {
+          glyphs[c] = blank;
+          continue;
+        }
+        filled[c] = 1;
+        t = 1 - t;
+      }
       if (dither === "ordered") t += BAYER4[(cy & 3) * 4 + (cx & 3)] * step;
 
       let best = 0;
@@ -133,7 +147,7 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
           if (gNorm[i] > 1e-4) {
             const gv = i * 9;
             for (let k = 0; k < 9; k++) cos += shapeVec[sv + k] * vec[gv + k];
-            cos /= cNorm * gNorm[i];
+            cos *= sign / (cNorm * gNorm[i]);
           }
           cost += shapeW * (1 - cos);
         }
@@ -156,6 +170,6 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
     }
   }
 
-  const result: ConvertResult = { id, cols, rows, glyphs, colors, ms: performance.now() - t0 };
-  self.postMessage(result, { transfer: [glyphs.buffer, colors.buffer] });
+  const result: ConvertResult = { id, cols, rows, glyphs, colors, filled, ms: performance.now() - t0 };
+  self.postMessage(result, { transfer: [glyphs.buffer, colors.buffer, filled.buffer] });
 };

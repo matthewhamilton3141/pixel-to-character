@@ -31,8 +31,12 @@ export function toHtml(res: ConvertResult, o: RenderOptions) {
     for (let x = 0; x < res.cols; x++) {
       const c = y * res.cols + x;
       const [r, g, b] = [rgb[c * 3], rgb[c * 3 + 1], rgb[c * 3 + 2]];
-      let style = o.colorMode === "mono" ? "" : `color:${hex(r, g, b)}`;
-      if (tint) style += `;background:${hex(...cellTint(rgb, c, o.bg))}`;
+      let style: string;
+      if (o.knockout) style = res.filled[c] ? `background:${hex(r, g, b)};color:${hex(...o.bg)}` : "";
+      else {
+        style = o.colorMode === "mono" ? "" : `color:${hex(r, g, b)}`;
+        if (tint) style += `;background:${hex(...cellTint(rgb, c, o.bg))}`;
+      }
       if (style !== runStyle) {
         flush();
         runStyle = style;
@@ -59,7 +63,10 @@ export function toAnsi(res: ConvertResult, o: RenderOptions) {
       const c = y * res.cols + x;
       const [r, g, b] = [rgb[c * 3], rgb[c * 3 + 1], rgb[c * 3 + 2]];
       let seq = "";
-      if (o.colorMode === "truecolor") {
+      if (o.knockout) {
+        const fill = ansi ? `48;5;${ansi[c]}` : `48;2;${r};${g};${b}`;
+        seq = res.filled[c] ? `\x1b[${fill}m\x1b[38;2;${o.bg.join(";")}m` : "\x1b[0m";
+      } else if (o.colorMode === "truecolor") {
         seq = `\x1b[38;2;${r};${g};${b}m`;
         if (tint) seq += `\x1b[48;2;${cellTint(rgb, c, o.bg).join(";")}m`;
       } else if (ansi) {
@@ -71,7 +78,7 @@ export function toAnsi(res: ConvertResult, o: RenderOptions) {
       }
       out += textFor(o.chars[res.glyphs[c]]);
     }
-    out += o.colorMode === "mono" ? "\n" : "\x1b[0m\n";
+    out += o.colorMode === "mono" && !o.knockout ? "\n" : "\x1b[0m\n";
   }
   return out;
 }

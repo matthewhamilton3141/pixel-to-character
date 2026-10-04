@@ -139,10 +139,11 @@ async function update() {
       gamma: +$("gamma").value,
       autoLevels: $("autoLevels").checked,
       inkIsDark: lightBg !== $("invert").checked,
-      paperInk: colorMode !== "mono" && lightBg && !$("invert").checked,
+      paperInk: colorMode !== "mono" && lightBg && !$("invert").checked && !$("knockout").checked,
       paper: [bg[0] / 255, bg[1] / 255, bg[2] / 255],
       shape: +$("shape").value,
       dither: $<HTMLSelectElement>("dither").value as Dither,
+      knockout: $("knockout").checked,
     },
     density: g.density,
     vec: g.vec,
@@ -160,6 +161,7 @@ async function update() {
     bg,
     cellBg: $("cellBg").checked,
     weight,
+    knockout: $("knockout").checked,
   };
   worker.postMessage(req, [pixels.buffer]);
 }

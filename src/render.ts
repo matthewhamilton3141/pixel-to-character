@@ -13,6 +13,7 @@ export interface RenderOptions {
   bg: [number, number, number];
   cellBg: boolean; // tint each cell's background with a dimmed copy of its color
   weight: number; // 0..1, thickens glyphs with an outline stroke
+  knockout: boolean; // fill cells, cut glyphs out as transparent holes
 }
 
 /** Tinted cell background: a wash of the cell's color over the paper. */
@@ -62,7 +63,20 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
 
   const { rgb } = cellColors(res, o.colorMode, o.fg);
 
-  if (o.cellBg && o.colorMode !== "mono") {
+  if (o.knockout) {
+    // Fill cells snapped to device pixels so neighbours meet without seams
+    const sx = (v: number) => Math.round(v * kx) / kx;
+    const sy = (v: number) => Math.round(v * ky) / ky;
+    for (let c = 0; c < res.cols * res.rows; c++) {
+      if (!res.filled[c]) continue;
+      const x = (c % res.cols) * cw, y = Math.floor(c / res.cols) * ch;
+      ctx.fillStyle = `rgb(${rgb[c * 3]},${rgb[c * 3 + 1]},${rgb[c * 3 + 2]})`;
+      ctx.fillRect(sx(x), sy(y), sx(x + cw) - sx(x), sy(y + ch) - sy(y));
+    }
+    // Then erase each glyph's shape, leaving real transparency
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = ctx.strokeStyle = "#000";
+  } else if (o.cellBg && o.colorMode !== "mono") {
     for (let c = 0; c < res.cols * res.rows; c++) {
       const x = (c % res.cols) * cw, y = Math.floor(c / res.cols) * ch;
       ctx.fillStyle = `rgb(${cellTint(rgb, c, o.bg)})`;
@@ -81,9 +95,9 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
     for (let x = 0; x < res.cols; x++) {
       const c = y * res.cols + x;
       const char = o.chars[res.glyphs[c]];
-      if (char === " ") continue;
+      if (char === " " || (o.knockout && !res.filled[c])) continue;
       const key = (rgb[c * 3] << 16) | (rgb[c * 3 + 1] << 8) | rgb[c * 3 + 2];
-      if (key !== last) {
+      if (!o.knockout && key !== last) {
         ctx.fillStyle = ctx.strokeStyle = `rgb(${rgb[c * 3]},${rgb[c * 3 + 1]},${rgb[c * 3 + 2]})`;
         last = key;
       }
@@ -92,4 +106,5 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
       if (stroke) ctx.strokeText(char, x * cw, y * ch + ch / 2);
     }
   }
+  ctx.globalCompositeOperation = "source-over";
 }
