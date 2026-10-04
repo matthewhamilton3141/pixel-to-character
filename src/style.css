@@ -74,7 +74,6 @@ label { display: block; margin-bottom: 14px; color: var(--mute); }
   margin-bottom: 14px;
   color: var(--mute);
 }
-.range[hidden] { display: none; }
 .range label { margin: 0; }
 .range input[type="range"] { grid-column: 1 / -1; }
 
