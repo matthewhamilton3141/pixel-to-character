@@ -17,8 +17,8 @@ const hex = (r: number, g: number, b: number) =>
   "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
 
 export function toHtml(res: ConvertResult, o: RenderOptions) {
-  const { rgb } = cellColors(res, o.colorMode, o.fg);
-  const tint = o.cellBg && o.colorMode !== "mono";
+  const { rgb } = cellColors(res, o);
+  const tint = o.cellBg && o.colorMode !== "mono" && o.colorMode !== "tint";
   let body = "";
   for (let y = 0; y < res.rows; y++) {
     let run = "";
@@ -49,8 +49,8 @@ export function toHtml(res: ConvertResult, o: RenderOptions) {
 }
 
 export function toAnsi(res: ConvertResult, o: RenderOptions) {
-  const { rgb, ansi } = cellColors(res, o.colorMode, o.fg);
-  const tint = o.cellBg && o.colorMode !== "mono";
+  const { rgb, ansi } = cellColors(res, o);
+  const tint = o.cellBg && o.colorMode !== "mono" && o.colorMode !== "tint";
   let out = "";
   for (let y = 0; y < res.rows; y++) {
     let last = "";

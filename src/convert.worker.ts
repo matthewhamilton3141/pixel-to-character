@@ -5,7 +5,7 @@ const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) =>
 self.onmessage = (e: MessageEvent<ConvertRequest>) => {
   const t0 = performance.now();
   const { id, pixels, cols, rows, params, density, vec, coverage } = e.data;
-  const { brightness, contrast, gamma, inkIsDark, shape, dither, autoLevels, paperInk, paper } = params;
+  const { brightness, contrast, gamma, inkIsDark, shape, dither, autoLevels, paperInk, paper, tintLevels } = params;
   const n = density.length;
   const cells = cols * rows;
   const W = cols * 3;
@@ -91,6 +91,7 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
 
   // Pass 2: pick the glyph minimizing tone error + weighted shape error
   const glyphs = new Uint16Array(cells);
+  const tones = tone.slice(); // dithering below edits `tone` in place
   // Shape is scored by direction (cosine) and only counts as much as the cell
   // actually has an edge, so smooth regions stay a pure tone ramp.
   const SHAPE_K = 0.04;
@@ -111,6 +112,7 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
     for (let cx = 0; cx < cols; cx++) {
       const c = cy * cols + cx;
       let t = tone[c];
+      if (tintLevels > 1) t = t >= 0.5 / (tintLevels - 1) ? 0.72 + 0.08 * t : 0;
       if (dither === "ordered") t += BAYER4[(cy & 3) * 4 + (cx & 3)] * step;
 
       let best = 0;
@@ -156,6 +158,6 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
     }
   }
 
-  const result: ConvertResult = { id, cols, rows, glyphs, colors, ms: performance.now() - t0 };
-  self.postMessage(result, { transfer: [glyphs.buffer, colors.buffer] });
+  const result: ConvertResult = { id, cols, rows, glyphs, colors, tones, ms: performance.now() - t0 };
+  self.postMessage(result, { transfer: [glyphs.buffer, colors.buffer, tones.buffer] });
 };

@@ -123,7 +123,8 @@ async function update() {
   const fg = hexToRgb($("fg").value);
   const bg = hexToRgb($("bg").value);
   // On a light background ink is dark, so dense glyphs belong in dark areas
-  const lightBg = colorMode === "mono" ? luminance(bg) > luminance(fg) : luminance(bg) > 0.5;
+  const singleInk = colorMode === "mono" || colorMode === "tint";
+  const lightBg = singleInk ? luminance(bg) > luminance(fg) : luminance(bg) > 0.5;
 
   const req: ConvertRequest = {
     id: ++requestId,
@@ -136,10 +137,11 @@ async function update() {
       gamma: +$("gamma").value,
       autoLevels: $("autoLevels").checked,
       inkIsDark: lightBg !== $("invert").checked,
-      paperInk: colorMode !== "mono" && lightBg && !$("invert").checked,
+      paperInk: !singleInk && lightBg && !$("invert").checked,
       paper: [bg[0] / 255, bg[1] / 255, bg[2] / 255],
       shape: +$("shape").value,
       dither: $<HTMLSelectElement>("dither").value as Dither,
+      tintLevels: colorMode === "tint" ? +$("levels").value : 0,
     },
     density: g.density,
     vec: g.vec,
@@ -157,6 +159,7 @@ async function update() {
     bg,
     cellBg: $("cellBg").checked,
     weight,
+    levels: +$("levels").value,
   };
   worker.postMessage(req, [pixels.buffer]);
 }
@@ -190,6 +193,11 @@ function draw() {
   stats.textContent = `${cols}×${rows} · convert ${lastResult.ms.toFixed(0)} ms · draw ${(performance.now() - t0).toFixed(0)} ms`;
 }
 
+// Levels only applies to Tint mode
+function syncColorModeUI() {
+  $<HTMLElement>("levelsRow").hidden = $<HTMLSelectElement>("colorMode").value !== "tint";
+}
+
 // Controls
 const controls = [...document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(".panel input, .panel select")].filter(
   (el) => el.id !== "file" && !el.classList.contains("num"),
@@ -202,11 +210,13 @@ for (const el of controls) {
       stage.classList.toggle("fit", $("fit").checked);
     }
     if (el.id === "charset") $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
+    if (el.id === "colorMode") syncColorModeUI();
     if (el.id === "fontSize") draw();
     else update();
   });
 }
 stage.classList.toggle("fit", $("fit").checked);
+syncColorModeUI();
 
 // Restore defaults: every control back to its HTML default; the image and theme stay
 $("reset").addEventListener("click", () => {
@@ -219,6 +229,7 @@ $("reset").addEventListener("click", () => {
   }
   applyTheme(); // ink and paper follow the current theme
   $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
+  syncColorModeUI();
   $("fontSize").disabled = $("fit").checked;
   stage.classList.toggle("fit", $("fit").checked);
   ranges.forEach(syncRange);

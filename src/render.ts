@@ -13,19 +13,25 @@ export interface RenderOptions {
   bg: [number, number, number];
   cellBg: boolean; // tint each cell's background with a dimmed copy of its color
   weight: number; // 0..1, thickens glyphs with an outline stroke
+  levels: number; // Tint mode: number of shades between paper and ink
 }
 
 export const CELL_BG_DIM = 0.3;
 
 /** Resolved foreground color (and ANSI index when relevant) for each cell. */
-export function cellColors(res: ConvertResult, mode: ColorMode, fg: [number, number, number]) {
+export function cellColors(res: ConvertResult, o: RenderOptions) {
   const cells = res.cols * res.rows;
   const rgb = new Uint8Array(cells * 3);
-  const ansi = mode === "ansi256" ? new Uint8Array(cells) : null;
+  const ansi = o.colorMode === "ansi256" ? new Uint8Array(cells) : null;
+  const steps = Math.max(1, o.levels - 1);
   for (let c = 0; c < cells; c++) {
     let r = res.colors[c * 3], g = res.colors[c * 3 + 1], b = res.colors[c * 3 + 2];
-    if (mode === "mono") [r, g, b] = fg;
-    else if (ansi) {
+    if (o.colorMode === "mono") [r, g, b] = o.fg;
+    else if (o.colorMode === "tint") {
+      // Posterize tone into a few flat shades between paper and ink
+      const t = Math.round(Math.min(1, Math.max(0, res.tones[c])) * steps) / steps;
+      [r, g, b] = [0, 1, 2].map((ch) => o.bg[ch] + (o.fg[ch] - o.bg[ch]) * t);
+    } else if (ansi) {
       const q = toAnsi256(r, g, b);
       ansi[c] = q[0];
       [r, g, b] = [q[1], q[2], q[3]];
@@ -56,9 +62,9 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
   ctx.fillStyle = `rgb(${o.bg})`;
   ctx.fillRect(0, 0, cssW, cssH);
 
-  const { rgb } = cellColors(res, o.colorMode, o.fg);
+  const { rgb } = cellColors(res, o);
 
-  if (o.cellBg && o.colorMode !== "mono") {
+  if (o.cellBg && o.colorMode !== "mono" && o.colorMode !== "tint") {
     for (let c = 0; c < res.cols * res.rows; c++) {
       const x = (c % res.cols) * cw, y = Math.floor(c / res.cols) * ch;
       ctx.fillStyle = `rgb(${rgb[c * 3] * CELL_BG_DIM},${rgb[c * 3 + 1] * CELL_BG_DIM},${rgb[c * 3 + 2] * CELL_BG_DIM})`;
