@@ -72,18 +72,24 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
   // Shape is scored by direction (cosine) and only counts as much as the cell
   // actually has an edge, so smooth regions stay a pure tone ramp.
   const SHAPE_K = 0.04;
+  // In smooth areas, prefer glyphs whose ink is spread evenly (░▒▓, %, #) over
+  // structured ones (▀▌, |, _), which tile into stripes and mazes.
+  const FLAT_K = 0.012;
   const gNorm = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     let m = 0;
     for (let k = 0; k < 9; k++) m += vec[i * 9 + k] ** 2;
     gNorm[i] = Math.sqrt(m);
   }
-  const step = 1 / Math.max(1, n - 1);
+  // Ordered dither spans one gap between *distinct* tone levels; sets like
+  // blocks have many glyphs but only a handful of densities
+  const levels = Array.from(density).sort((a, b) => a - b).filter((d, i, a) => i === 0 || d - a[i - 1] > 0.02);
+  const step = 1 / Math.max(1, levels.length - 1);
   for (let cy = 0; cy < rows; cy++) {
     for (let cx = 0; cx < cols; cx++) {
       const c = cy * cols + cx;
       let t = tone[c];
-      if (dither === "ordered") t += BAYER4[(cy & 3) * 4 + (cx & 3)] * step * 2;
+      if (dither === "ordered") t += BAYER4[(cy & 3) * 4 + (cx & 3)] * step;
 
       let best = 0;
       let bestCost = Infinity;
@@ -91,11 +97,14 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
       let cNorm = 0;
       for (let k = 0; k < 9; k++) cNorm += shapeVec[sv + k] ** 2;
       cNorm = Math.sqrt(cNorm);
-      const edge = Math.min(1, cNorm * 4);
+      // Soft threshold: gentle gradients aren't edges, real boundaries are
+      const edge = Math.min(1, Math.max(0, (cNorm - 0.1) / 0.3));
       const shapeW = shape * edge * SHAPE_K;
+      const flatW = (1 - edge) * FLAT_K;
       for (let i = 0; i < n; i++) {
         const dt = t - density[i];
         let cost = dt * dt;
+        cost += flatW * gNorm[i] * gNorm[i];
         if (cost >= bestCost) continue;
         if (shapeW > 0) {
           let cos = 0;
