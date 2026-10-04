@@ -15,7 +15,11 @@ export interface RenderOptions {
   weight: number; // 0..1, thickens glyphs with an outline stroke
 }
 
-export const CELL_BG_DIM = 0.3;
+/** Tinted cell background: a wash of the cell's color over the paper. */
+export function cellTint(rgb: ArrayLike<number>, c: number, paper: [number, number, number]): [number, number, number] {
+  const AMOUNT = 0.3;
+  return [0, 1, 2].map((ch) => Math.round(paper[ch] + (rgb[c * 3 + ch] - paper[ch]) * AMOUNT)) as [number, number, number];
+}
 
 /** Resolved foreground color (and ANSI index when relevant) for each cell. */
 export function cellColors(res: ConvertResult, mode: ColorMode, fg: [number, number, number]) {
@@ -61,7 +65,7 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
   if (o.cellBg && o.colorMode !== "mono") {
     for (let c = 0; c < res.cols * res.rows; c++) {
       const x = (c % res.cols) * cw, y = Math.floor(c / res.cols) * ch;
-      ctx.fillStyle = `rgb(${rgb[c * 3] * CELL_BG_DIM},${rgb[c * 3 + 1] * CELL_BG_DIM},${rgb[c * 3 + 2] * CELL_BG_DIM})`;
+      ctx.fillStyle = `rgb(${cellTint(rgb, c, o.bg)})`;
       ctx.fillRect(x, y, cw + 0.5, ch + 0.5);
     }
   }

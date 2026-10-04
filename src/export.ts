@@ -1,4 +1,4 @@
-import { CELL_BG_DIM, cellColors, type RenderOptions } from "./render";
+import { cellColors, cellTint, type RenderOptions } from "./render";
 import { textFor } from "./dots";
 import { MAX_STROKE_EM } from "./glyphs";
 import type { ConvertResult } from "./types";
@@ -32,7 +32,7 @@ export function toHtml(res: ConvertResult, o: RenderOptions) {
       const c = y * res.cols + x;
       const [r, g, b] = [rgb[c * 3], rgb[c * 3 + 1], rgb[c * 3 + 2]];
       let style = o.colorMode === "mono" ? "" : `color:${hex(r, g, b)}`;
-      if (tint) style += `;background:${hex(r * CELL_BG_DIM, g * CELL_BG_DIM, b * CELL_BG_DIM)}`;
+      if (tint) style += `;background:${hex(...cellTint(rgb, c, o.bg))}`;
       if (style !== runStyle) {
         flush();
         runStyle = style;
@@ -61,7 +61,7 @@ export function toAnsi(res: ConvertResult, o: RenderOptions) {
       let seq = "";
       if (o.colorMode === "truecolor") {
         seq = `\x1b[38;2;${r};${g};${b}m`;
-        if (tint) seq += `\x1b[48;2;${(r * CELL_BG_DIM) | 0};${(g * CELL_BG_DIM) | 0};${(b * CELL_BG_DIM) | 0}m`;
+        if (tint) seq += `\x1b[48;2;${cellTint(rgb, c, o.bg).join(";")}m`;
       } else if (ansi) {
         seq = `\x1b[38;5;${ansi[c]}m`;
       }
