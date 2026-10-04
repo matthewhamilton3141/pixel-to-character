@@ -175,42 +175,20 @@ function draw() {
   stats.textContent = `${cols}×${rows} · convert ${lastResult.ms.toFixed(0)} ms · draw ${(performance.now() - t0).toFixed(0)} ms`;
 }
 
-// Blocks has only a few tone levels, so it gets ordered dithering by default
-// (until the user picks a dither themselves). Block shapes already fill the
-// cell, so weight has nothing to thicken.
-let autoDither = false;
-function syncCharsetDefaults() {
-  const blocks = $<HTMLSelectElement>("charset").value === "blocks";
-  const dither = $<HTMLSelectElement>("dither");
-  if (blocks && dither.value === "none") {
-    dither.value = "ordered";
-    autoDither = true;
-  } else if (!blocks && autoDither) {
-    dither.value = "none";
-    autoDither = false;
-  }
-  $("weight").disabled = blocks;
-}
-
 // Controls
 for (const el of document.querySelectorAll<HTMLElement>(".panel input, .panel select")) {
   if (el.id === "file") continue;
   el.addEventListener("input", () => {
-    if (el.id === "dither") autoDither = false;
     if (el.id === "fit") {
       $("fontSize").disabled = $("fit").checked;
       stage.classList.toggle("fit", $("fit").checked);
     }
-    if (el.id === "charset") {
-      $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
-      syncCharsetDefaults();
-    }
+    if (el.id === "charset") $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
     if (el.id === "fontSize") draw();
     else update();
   });
 }
 stage.classList.toggle("fit", $("fit").checked);
-syncCharsetDefaults();
 new ResizeObserver(() => $("fit").checked && draw()).observe(stage);
 
 // Loading images

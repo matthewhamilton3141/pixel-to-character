@@ -5,7 +5,5 @@ export const CHARSETS: Record<string, string> = {
   detailed: printable,
   standard: " .:-=+*#%@",
   minimal: " .oO@",
-  // shades for tone, half/quarter blocks so shape matching can follow edges
-  blocks: " ░▒▓▀▄▌▐▖▗▘▝▚▞▙▛▜▟",
   braille,
 };

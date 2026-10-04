@@ -81,8 +81,8 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
     for (let k = 0; k < 9; k++) m += vec[i * 9 + k] ** 2;
     gNorm[i] = Math.sqrt(m);
   }
-  // Ordered dither spans one gap between *distinct* tone levels; sets like
-  // blocks have many glyphs but only a handful of densities
+  // Ordered dither spans one gap between *distinct* tone levels, since
+  // custom sets can have many glyphs but only a few densities
   const levels = Array.from(density).sort((a, b) => a - b).filter((d, i, a) => i === 0 || d - a[i - 1] > 0.02);
   const step = 1 / Math.max(1, levels.length - 1);
   for (let cy = 0; cy < rows; cy++) {
