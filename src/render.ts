@@ -1,4 +1,5 @@
 import { toAnsi256 } from "./color";
+import { MAX_STROKE_EM } from "./glyphs";
 import type { ColorMode, ConvertResult } from "./types";
 
 export interface RenderOptions {
@@ -10,6 +11,7 @@ export interface RenderOptions {
   fg: [number, number, number];
   bg: [number, number, number];
   cellBg: boolean; // tint each cell's background with a dimmed copy of its color
+  weight: number; // 0..1, thickens glyphs with an outline stroke
 }
 
 export const CELL_BG_DIM = 0.3;
@@ -64,6 +66,9 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
   ctx.font = `${o.fontSize}px ${o.font}`;
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
+  const stroke = o.weight > 0;
+  ctx.lineJoin = "round";
+  ctx.lineWidth = o.weight * MAX_STROKE_EM * o.fontSize;
   let last = -1;
   for (let y = 0; y < res.rows; y++) {
     for (let x = 0; x < res.cols; x++) {
@@ -72,10 +77,11 @@ export function render(canvas: HTMLCanvasElement, res: ConvertResult, o: RenderO
       if (char === " ") continue;
       const key = (rgb[c * 3] << 16) | (rgb[c * 3 + 1] << 8) | rgb[c * 3 + 2];
       if (key !== last) {
-        ctx.fillStyle = `rgb(${rgb[c * 3]},${rgb[c * 3 + 1]},${rgb[c * 3 + 2]})`;
+        ctx.fillStyle = ctx.strokeStyle = `rgb(${rgb[c * 3]},${rgb[c * 3 + 1]},${rgb[c * 3 + 2]})`;
         last = key;
       }
       ctx.fillText(char, x * cw, y * ch + ch / 2);
+      if (stroke) ctx.strokeText(char, x * cw, y * ch + ch / 2);
     }
   }
 }

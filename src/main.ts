@@ -91,9 +91,10 @@ async function update() {
   pending = false;
 
   const font = $<HTMLSelectElement>("font").value;
-  const key = font + "\0" + charset();
+  const weight = +$("weight").value;
+  const key = font + "\0" + weight + "\0" + charset();
   if (key !== glyphKey) {
-    glyphs = await buildGlyphTable(charset(), font);
+    glyphs = await buildGlyphTable(charset(), font, weight);
     glyphKey = key;
   }
   const g = glyphs!;
@@ -140,6 +141,7 @@ async function update() {
     fg,
     bg,
     cellBg: $("cellBg").checked,
+    weight,
   };
   worker.postMessage(req, [pixels.buffer]);
 }

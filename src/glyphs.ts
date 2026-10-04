@@ -11,7 +11,10 @@ export interface GlyphTable {
 
 const SIZE = 48;
 
-export async function buildGlyphTable(charset: string, font: string): Promise<GlyphTable> {
+/** Stroke width, as a fraction of font size, at Weight = 1. */
+export const MAX_STROKE_EM = 0.12;
+
+export async function buildGlyphTable(charset: string, font: string, weight = 0): Promise<GlyphTable> {
   const fontSpec = `${SIZE}px ${font}`;
   await document.fonts.load(fontSpec, charset).catch(() => {});
 
@@ -47,6 +50,13 @@ export async function buildGlyphTable(charset: string, font: string): Promise<Gl
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
     ctx.fillText(chars[i], 0, h / 2);
+    // Measure thickened glyphs exactly as they'll be drawn, so tone stays right
+    if (weight > 0) {
+      ctx.strokeStyle = "#fff";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = weight * MAX_STROKE_EM * SIZE;
+      ctx.strokeText(chars[i], 0, h / 2);
+    }
     const px = ctx.getImageData(0, 0, w, h).data;
     const sums = new Float32Array(9);
     let total = 0;
