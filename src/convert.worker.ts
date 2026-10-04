@@ -4,8 +4,8 @@ const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) =>
 
 self.onmessage = (e: MessageEvent<ConvertRequest>) => {
   const t0 = performance.now();
-  const { id, pixels, cols, rows, params, density, vec } = e.data;
-  const { brightness, contrast, gamma, inkIsDark, shape, dither, autoLevels } = params;
+  const { id, pixels, cols, rows, params, density, vec, coverage } = e.data;
+  const { brightness, contrast, gamma, inkIsDark, shape, dither, autoLevels, paperInk, paper } = params;
   const n = density.length;
   const cells = cols * rows;
   const W = cols * 3;
@@ -53,17 +53,39 @@ self.onmessage = (e: MessageEvent<ConvertRequest>) => {
         const p = ((cy * 3 + ((k / 3) | 0)) * W + cx * 3 + (k % 3)) * 4;
         const pr = pixels[p], pg = pixels[p + 1], pb = pixels[p + 2];
         r += pr; g += pg; b += pb;
-        let v = adjust((0.2126 * pr + 0.7152 * pg + 0.0722 * pb) / 255);
-        if (inkIsDark) v = 1 - v;
+        let v: number;
+        if (paperInk) {
+          // How much ink this color needs on the paper: the channel that has
+          // to come down the furthest from the paper's value
+          const ar = adjust(pr / 255), ag = adjust(pg / 255), ab = adjust(pb / 255);
+          v = Math.max(0, (paper[0] - ar) / paper[0], (paper[1] - ag) / paper[1], (paper[2] - ab) / paper[2]);
+        } else {
+          v = adjust((0.2126 * pr + 0.7152 * pg + 0.0722 * pb) / 255);
+          if (inkIsDark) v = 1 - v;
+        }
         s[k] = v;
         sum += v;
       }
       const t = sum / 9;
       tone[c] = t;
       for (let k = 0; k < 9; k++) shapeVec[c * 9 + k] = s[k] - t;
-      colors[c * 3] = adjust(r / 9 / 255) * 255;
-      colors[c * 3 + 1] = adjust(g / 9 / 255) * 255;
-      colors[c * 3 + 2] = adjust(b / 9 / 255) * 255;
+      const avg = [adjust(r / 9 / 255), adjust(g / 9 / 255), adjust(b / 9 / 255)];
+      let f = 1;
+      if (paperInk) {
+        // The glyph inks about t·coverage of the cell, so pushing its color
+        // away from the paper by 1/(t·coverage) makes ink and paper blend back
+        // to the original. Capped so no channel clips, which keeps the hue.
+        f = 1 / Math.max(t * coverage, 0.05);
+        for (let ch = 0; ch < 3; ch++) {
+          const d = paper[ch] - avg[ch];
+          if (d > 1e-3) f = Math.min(f, paper[ch] / d);
+        }
+        f = Math.max(1, f);
+      }
+      for (let ch = 0; ch < 3; ch++) {
+        const v = paper[ch] + (avg[ch] - paper[ch]) * f;
+        colors[c * 3 + ch] = (v < 0 ? 0 : v > 1 ? 1 : v) * 255;
+      }
     }
   }
 

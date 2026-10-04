@@ -9,6 +9,7 @@ export interface GlyphTable {
   density: Float32Array; // n, 0..1
   vec: Float32Array; // n*9, zero-mean sub-cell coverage
   aspect: number; // cell width / cell height
+  coverage: number; // fraction of the cell the densest glyph actually inks
 }
 
 const SIZE = 48;
@@ -87,5 +88,5 @@ export async function buildGlyphTable(charset: string, font: string, weight = 0)
     for (let k = 0; k < 9; k++) vec[i * 9 + k] = (sub[i * 9 + k] - raw[i]) / range;
   }
 
-  return { chars, density, vec, aspect: w / h };
+  return { chars, density, vec, aspect: w / h, coverage: max };
 }

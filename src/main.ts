@@ -136,11 +136,14 @@ async function update() {
       gamma: +$("gamma").value,
       autoLevels: $("autoLevels").checked,
       inkIsDark: lightBg !== $("invert").checked,
+      paperInk: colorMode !== "mono" && lightBg && !$("invert").checked,
+      paper: [bg[0] / 255, bg[1] / 255, bg[2] / 255],
       shape: +$("shape").value,
       dither: $<HTMLSelectElement>("dither").value as Dither,
     },
     density: g.density,
     vec: g.vec,
+    coverage: g.coverage,
   };
 
   lastSourceAspect = source.width / source.height;
