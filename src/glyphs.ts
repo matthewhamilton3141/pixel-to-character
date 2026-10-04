@@ -1,5 +1,3 @@
-import { drawShape } from "./shapes";
-
 // Measures each character's ink: overall density (for tone) and a 3×3 coverage
 // grid (for shape). Both are normalized so the sparsest glyph is 0 and the
 // densest is 1, which lets the converter compare them directly to image tone.
@@ -51,15 +49,13 @@ export async function buildGlyphTable(charset: string, font: string, weight = 0)
     ctx.fillStyle = "#fff";
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
-    // Measure every glyph exactly as it'll be drawn, so tone stays right
-    if (!drawShape(ctx, chars[i], 0, 0, w, h, weight)) {
-      ctx.fillText(chars[i], 0, h / 2);
-      if (weight > 0) {
-        ctx.strokeStyle = "#fff";
-        ctx.lineJoin = "round";
-        ctx.lineWidth = weight * MAX_STROKE_EM * SIZE;
-        ctx.strokeText(chars[i], 0, h / 2);
-      }
+    ctx.fillText(chars[i], 0, h / 2);
+    // Measure thickened glyphs exactly as they'll be drawn, so tone stays right
+    if (weight > 0) {
+      ctx.strokeStyle = "#fff";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = weight * MAX_STROKE_EM * SIZE;
+      ctx.strokeText(chars[i], 0, h / 2);
     }
     const px = ctx.getImageData(0, 0, w, h).data;
     const sums = new Float32Array(9);

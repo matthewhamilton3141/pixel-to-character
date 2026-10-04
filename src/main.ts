@@ -183,17 +183,12 @@ for (const el of document.querySelectorAll<HTMLElement>(".panel input, .panel se
       $("fontSize").disabled = $("fit").checked;
       stage.classList.toggle("fit", $("fit").checked);
     }
-    if (el.id === "charset") {
-      $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
-      // Block shapes already fill the cell, so weight has nothing to thicken
-      $("weight").disabled = $<HTMLSelectElement>("charset").value === "blocks";
-    }
+    if (el.id === "charset") $("custom").hidden = $<HTMLSelectElement>("charset").value !== "custom";
     if (el.id === "fontSize") draw();
     else update();
   });
 }
 stage.classList.toggle("fit", $("fit").checked);
-$("weight").disabled = $<HTMLSelectElement>("charset").value === "blocks";
 new ResizeObserver(() => $("fit").checked && draw()).observe(stage);
 
 // Loading images
