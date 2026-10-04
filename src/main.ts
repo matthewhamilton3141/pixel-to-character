@@ -20,6 +20,7 @@ let glyphKey = "";
 let lastResult: ConvertResult | null = null;
 let lastOptions: RenderOptions | null = null;
 let lastSourceAspect = 1;
+let rotation = 0; // quarter turns clockwise, applied when sampling the image
 let requestId = 0;
 let busy = false;
 let pending = false;
@@ -115,11 +116,19 @@ async function update() {
   const g = glyphs!;
 
   const cols = +$("cols").value;
-  const rows = Math.max(1, Math.round((cols * source.height * g.aspect) / source.width));
+  const sideways = rotation % 2 === 1;
+  const srcW = sideways ? source.height : source.width;
+  const srcH = sideways ? source.width : source.height;
+  const rows = Math.max(1, Math.round((cols * srcH * g.aspect) / srcW));
   sample.width = cols * 3;
   sample.height = rows * 3;
   sampleCtx.imageSmoothingQuality = "high";
-  sampleCtx.drawImage(source, 0, 0, sample.width, sample.height);
+  sampleCtx.save();
+  sampleCtx.translate(sample.width / 2, sample.height / 2);
+  sampleCtx.rotate((rotation * Math.PI) / 2);
+  const [dw, dh] = sideways ? [sample.height, sample.width] : [sample.width, sample.height];
+  sampleCtx.drawImage(source, -dw / 2, -dh / 2, dw, dh);
+  sampleCtx.restore();
   const pixels = sampleCtx.getImageData(0, 0, sample.width, sample.height).data;
 
   const colorMode = $<HTMLSelectElement>("colorMode").value as ColorMode;
@@ -150,7 +159,7 @@ async function update() {
     coverage: g.coverage,
   };
 
-  lastSourceAspect = source.width / source.height;
+  lastSourceAspect = srcW / srcH;
   lastOptions = {
     chars: g.chars,
     font,
@@ -243,9 +252,18 @@ new ResizeObserver(() => $("fit").checked && draw()).observe(stage);
 async function loadFile(file: File | null | undefined) {
   if (!file || !file.type.startsWith("image/")) return;
   source = await createImageBitmap(file);
+  rotation = 0;
   update();
 }
 $("open").addEventListener("click", () => $("file").click());
+$("rotL").addEventListener("click", () => {
+  rotation = (rotation + 3) % 4;
+  update();
+});
+$("rotR").addEventListener("click", () => {
+  rotation = (rotation + 1) % 4;
+  update();
+});
 $("file").addEventListener("change", () => loadFile($("file").files?.[0]));
 window.addEventListener("paste", (e) => loadFile(e.clipboardData?.files[0]));
 let dragDepth = 0;
