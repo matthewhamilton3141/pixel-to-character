@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ASCII</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Mono&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <aside class="panel">
+      <header>
+        <div class="mark">ascii</div>
+        <button id="theme" class="theme" aria-label="Toggle light or dark mode"></button>
+      </header>
+
+      <div class="open">
+        <button id="open">Open image</button>
+        <input id="file" type="file" accept="image/*" hidden />
+        <p class="hint">or drop or paste one</p>
+      </div>
+
+      <section>
+        <h2>Grid</h2>
+        <label class="range">Columns <output for="cols"></output><input id="cols" type="range" min="20" max="400" value="140" /></label>
+        <label class="field">Characters
+          <span class="sel"><select id="charset">
+            <option value="detailed">Full ASCII</option>
+            <option value="standard">Standard ramp</option>
+            <option value="minimal">Minimal</option>
+            <option value="blocks">Blocks ░▒▓█</option>
+            <option value="braille">Braille</option>
+            <option value="custom">Custom…</option>
+          </select></span>
+        </label>
+        <input id="custom" type="text" value=" .,:;irsXA253hMHGS#9B&@" spellcheck="false" hidden />
+        <label class="field">Font
+          <span class="sel"><select id="font">
+            <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+            <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+            <option value="'Space Mono', monospace">Space Mono</option>
+            <option value="Menlo, monospace">Menlo</option>
+            <option value="'Courier New', monospace">Courier New</option>
+          </select></span>
+        </label>
+        <label class="range">Shape <output for="shape"></output><input id="shape" type="range" min="0" max="1" step="0.01" value="0.6" /></label>
+        <p class="hint">Shading ← → edges</p>
+      </section>
+
+      <section>
+        <h2>Tone</h2>
+        <label class="range">Brightness <output for="brightness"></output><input id="brightness" type="range" min="-0.5" max="0.5" step="0.01" value="0" /></label>
+        <label class="range">Contrast <output for="contrast"></output><input id="contrast" type="range" min="0.2" max="3" step="0.01" value="1.2" /></label>
+        <label class="range">Gamma <output for="gamma"></output><input id="gamma" type="range" min="0.3" max="3" step="0.01" value="1" /></label>
+        <label class="field">Dither
+          <span class="sel"><select id="dither">
+            <option value="none">None</option>
+            <option value="ordered">Ordered</option>
+            <option value="fs">Floyd–Steinberg</option>
+          </select></span>
+        </label>
+        <div class="checks">
+          <label class="check"><input id="autoLevels" type="checkbox" checked /> Auto levels</label>
+          <label class="check"><input id="invert" type="checkbox" /> Invert</label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Color</h2>
+        <label class="field">Mode
+          <span class="sel"><select id="colorMode">
+            <option value="truecolor">Truecolor</option>
+            <option value="ansi256">ANSI 256</option>
+            <option value="mono">Mono</option>
+          </select></span>
+        </label>
+        <div class="swatches">
+          <label class="swatch"><input id="fg" type="color" value="#111111" /> Ink</label>
+          <label class="swatch"><input id="bg" type="color" value="#f6f6f4" /> Paper</label>
+        </div>
+        <label class="check"><input id="cellBg" type="checkbox" /> Tint cells</label>
+      </section>
+
+      <section>
+        <h2>View</h2>
+        <label class="check"><input id="fit" type="checkbox" checked /> Fit to window</label>
+        <label class="range">Size <output for="fontSize"></output><input id="fontSize" type="range" min="3" max="24" step="0.5" value="10" disabled /></label>
+      </section>
+
+      <section>
+        <h2>Export</h2>
+        <div class="buttons">
+          <button data-export="txt">TXT</button>
+          <button data-export="html">HTML</button>
+          <button data-export="ansi">ANSI</button>
+          <button data-export="png">PNG</button>
+          <button data-export="copy">Copy</button>
+        </div>
+      </section>
+    </aside>
+
+    <main id="stage">
+      <canvas id="out"></canvas>
+      <div id="stats"></div>
+      <div id="drop">Drop image</div>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
